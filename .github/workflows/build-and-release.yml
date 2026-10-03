@@ -1,0 +1,73 @@
+name: Build and release
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '8'
+          cache: gradle
+      - name: Build with Java 8
+        run: bash ./gradlew clean build --no-daemon
+      - name: Verify distributable
+        shell: bash
+        run: |
+          set -euo pipefail
+          mc_version="$(sed -n 's/^minecraft.version=//p' build.properties)"
+          mod_version="$(sed -n 's/^smartmoving.version=//p' build.properties)"
+          jar="build/libs/SmarterMoving-${mc_version}-${mod_version}.jar"
+          test -f "$jar"
+          test "$(find build/libs -maxdepth 1 -name '*.jar' | wc -l)" -eq 1
+          unzip -Z1 "$jar" | grep -Fx 'mixins.smartmoving.json'
+          unzip -Z1 "$jar" | grep -Fx 'mixins.smartmoving.refmap.json'
+          unzip -p "$jar" META-INF/MANIFEST.MF | grep '^MixinConfigs: mixins.smartmoving.json'
+          if unzip -Z1 "$jar" | grep -E '^(api/player/|net/smart/render/)'; then
+            echo 'Legacy API classes were packaged' >&2
+            exit 1
+          fi
+      - name: Upload JAR
+        uses: actions/upload-artifact@v7
+        with:
+          name: SmarterMoving-jar
+          path: build/libs/SmarterMoving-1.12.2-*.jar
+          if-no-files-found: error
+          archive: false
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
+        with:
+          name: SmarterMoving-jar
+          path: release-asset
+      - name: Publish matching version tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mc_version="$(sed -n 's/^minecraft.version=//p' build.properties)"
+          mod_version="$(sed -n 's/^smartmoving.version=//p' build.properties)"
+          test "$GITHUB_REF_NAME" = "v${mod_version}"
+          jar="release-asset/SmarterMoving-${mc_version}-${mod_version}.jar"
+          test -f "$jar"
+          gh release create "$GITHUB_REF_NAME" "$jar" \
+            --verify-tag --generate-notes --title "Smarter Moving ${mod_version}"
