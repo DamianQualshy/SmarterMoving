@@ -3,16 +3,18 @@ import org.apache.tools.ant.filters.ReplaceTokens
 buildscript {
     repositories {
         maven { url = 'https://files.minecraftforge.net/maven' }
-        jcenter()
+        maven { url = 'https://repo.spongepowered.org/maven' }
         mavenCentral()
     }
     dependencies {
-        classpath 'net.minecraftforge.gradle:ForgeGradle:3.+'
+        classpath 'net.minecraftforge.gradle:ForgeGradle:3.0.197'
+        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
     }
 }
 
 
 apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'org.spongepowered.mixin'
 // Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
@@ -25,14 +27,11 @@ file "build.properties" withReader {
 
 version = "${config.smartmoving.version}"
 group = "net.smart" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
-archivesBaseName = "SmartMoving"
-
-ext.simpleVersion = version
-version = "${config.minecraft.version}-${project.version}"
+archivesBaseName = "SmarterMoving-${config.minecraft.version}"
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
 
-task updateVersion(type: Copy) {
+task updateVersion(type: Sync) {
     from('src')
             {
                 exclude 'mcmod.info'
@@ -56,9 +55,8 @@ minecraft {
 
             // Recommended logging level for the console
             property 'forge.logging.console.level', 'debug'
+            arg '-torg.spongepowered.asm.launch.MixinTweaker'
 
-            // Force-load Player API in dev workspace
-            property 'fml.coreMods.load', 'api.player.forge.RenderPlayerAPIPlugin,api.player.forge.PlayerAPIPlugin'
         }
 
         server {
@@ -68,11 +66,19 @@ minecraft {
 
             // Recommended logging level for the console
             property 'forge.logging.console.level', 'debug'
+            arg '-torg.spongepowered.asm.launch.MixinTweaker'
 
-            // Force-load Player API in dev workspace
-            property 'fml.coreMods.load', 'api.player.forge.RenderPlayerAPIPlugin,api.player.forge.PlayerAPIPlugin'
         }
     }
+}
+
+repositories {
+    maven { url = 'https://repo.spongepowered.org/maven' }
+}
+
+configurations {
+    embeddedMixin
+    compile.extendsFrom embeddedMixin
 }
 
 dependencies {
@@ -81,27 +87,52 @@ dependencies {
     // The userdev artifact is a special name and will get all sorts of transformations applied to it.
     minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2854'
 
-    //implementation files('libs/RenderPlayerAPI-1.12.2-1.0.jar')
-    compile project(":PlayerAPI")
-    compile project(":RenderPlayerAPI")
-    compile project(":SmartRender")
+    embeddedMixin('org.spongepowered:mixin:0.8.5') {
+        exclude module: 'guava'
+        exclude module: 'commons-io'
+        exclude module: 'gson'
+    }
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
 }
 
+mixin {
+    add sourceSets.main, 'mixins.smartmoving.refmap.json'
+    config 'mixins.smartmoving.json'
+}
+
 // Example for how to get properties into the manifest for reading by the runtime..
 jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from {
+        configurations.embeddedMixin.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude 'META-INF/MANIFEST.MF', 'META-INF/maven/**', 'META-INF/*.RSA', 'META-INF/*.SF'
+        // Mixin's ModLauncher classes target Java 16. Forge 1.12 uses LaunchWrapper,
+        // and ForgeGradle's Java 8 reobfuscator cannot read those class files.
+        exclude 'module-info.class'
+        exclude 'org/spongepowered/asm/launch/MixinLaunchPlugin.class'
+        exclude 'org/spongepowered/asm/launch/MixinTransformationService.class'
+        exclude 'org/spongepowered/asm/launch/platform/container/ContainerHandleModLauncherEx*.class'
+        exclude 'META-INF/services/cpw.mods.modlauncher.api.ITransformationService'
+        exclude 'META-INF/services/cpw.mods.modlauncher.serviceapi.ILaunchPluginService'
+    }
     manifest {
         attributes([
-                "Specification-Title": "smartmoving",
-                "Specification-Vendor": "doch13_",
+                "Specification-Title": "smartermoving",
+                "Specification-Vendor": "DamianQualshy",
                 "Specification-Version": "1", // We are version 1 of ourselves
                 "Implementation-Title": project.name,
                 "Implementation-Version": "${version}",
-                "Implementation-Vendor" :"doch13_",
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+                "Implementation-Vendor" :"DamianQualshy",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                "ForceLoadAsMod": "true",
+                "FMLCorePluginContainsFMLMod": "true",
+                "TweakClass": "org.spongepowered.asm.launch.MixinTweaker",
+                "TweakOrder": "0"
         ])
     }
 }
@@ -109,14 +140,14 @@ jar {
 processResources {
     // this will ensure that this task is redone when the versions change.
     inputs.property "version", project.version
-    inputs.property "mcversion", "${config.minecraft.version}-${config.forge.version}"
+    inputs.property "mcversion", config.minecraft.version
 
     // replace stuff in mcmod.info, nothing else
     from(sourceSets.main.resources.srcDirs) {
         include 'mcmod.info'
 
         // replace version and mcversion
-        expand 'version':project.simpleVersion, 'mcversion':config.minecraft.version
+        expand 'version':project.version, 'mcversion':config.minecraft.version
     }
 
     // copy everything else except the mcmod.info

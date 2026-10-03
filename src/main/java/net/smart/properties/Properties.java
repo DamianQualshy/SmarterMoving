@@ -21,7 +21,7 @@ import java.io.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-import net.smart.utilities.*;
+import net.smart.moving.util.*;
 
 public class Properties extends java.util.Properties {
 	private static final long serialVersionUID = 5319578641402091067L;

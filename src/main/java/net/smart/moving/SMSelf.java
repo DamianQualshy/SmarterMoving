@@ -17,9 +17,9 @@
 
 package net.smart.moving;
 
-import static net.smart.render.SRUtilities.RadiantToAngle;
-import static net.smart.render.SRUtilities.getAngle;
-import static net.smart.render.SRUtilities.getHorizontalCollisionAngle;
+import static net.smart.moving.util.MovingAngles.RadiantToAngle;
+import static net.smart.moving.util.MovingAngles.getAngle;
+import static net.smart.moving.util.MovingAngles.getHorizontalCollisionAngle;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
@@ -36,8 +36,6 @@ import net.minecraft.client.gui.inventory.GuiInventory;
 import net.minecraft.client.settings.GameSettings;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.MoverType;
-import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.ai.attributes.ModifiableAttributeInstance;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBow;
@@ -56,7 +54,7 @@ import net.minecraft.util.math.MathHelper;
 import net.smart.moving.config.SMClientConfig;
 import net.smart.moving.config.SMOptions;
 import net.smart.moving.render.SMRender;
-import net.smart.utilities.Reflect;
+import net.smart.moving.util.Reflect;
 import net.smart.utilities.SoundUtil;
 
 public class SMSelf extends SMBase implements ISMSelf {
@@ -89,7 +87,7 @@ public class SMSelf extends SMBase implements ISMSelf {
 
 	private final Potion jumpBoost = Potion.REGISTRY.getObject(new ResourceLocation("jump_boost"));
 
-	public SMSelf(EntityPlayer sp, SMPlayerBase isp) {
+	public SMSelf(EntityPlayer sp, IEntityPlayerSP isp) {
 		super(sp, isp);
 
 		this.sp = sp;
@@ -1506,12 +1504,6 @@ public class SMSelf extends SMBase implements ISMSelf {
 		}
 	}
 
-	public void moveEntity(double d, double d1, double d2) {
-		beforeMoveEntity(d, d1, d2);
-		isp.localMoveEntity(MoverType.SELF, d, d1, d2);
-		afterMoveEntity(d, d1, d2);
-	}
-
 	public void afterMoveEntity(double d, double d1, double d2) {
 		if (isSliding || isCrawling)
 			sp.distanceWalkedModified = beforeDistanceWalkedModified;
@@ -1582,11 +1574,6 @@ public class SMSelf extends SMBase implements ISMSelf {
 			updateEntityActionState(true);
 	}
 
-	public EntityPlayer.SleepResult sleepInBedAt(int i, int j, int k) {
-		beforeSleepInBedAt(i, j, k);
-		return isp.localSleepInBedAt(i, j, k);
-	}
-
 	private void resetHeightOffset() {
 		AxisAlignedBB bb = getBoundingBox();
 		bb = new AxisAlignedBB(bb.minX, bb.minY + heightOffset, bb.minZ, bb.maxX, bb.maxY, bb.maxZ);
@@ -1615,18 +1602,8 @@ public class SMSelf extends SMBase implements ISMSelf {
 
 	boolean wasOnGround;
 
-	public float getBrightness() {
-		sp.posY -= heightOffset;
-		float result = isp.localGetBrightness();
-		sp.posY += heightOffset;
-		return result;
-	}
-
-	public int getBrightnessForRender() {
-		sp.posY -= heightOffset;
-		int result = isp.localGetBrightnessForRender();
-		sp.posY += heightOffset;
-		return result;
+	public float getHeightOffset() {
+		return heightOffset;
 	}
 
 	public boolean pushOutOfBlocks(double d, double d1, double d2) {
@@ -2101,6 +2078,23 @@ public class SMSelf extends SMBase implements ISMSelf {
 	}
 
 	public void updateEntityActionState(boolean startSleeping) {
+		ActionStateStart start = beforeUpdateEntityActionState();
+		afterUpdateEntityActionState(startSleeping, start);
+	}
+
+	public static final class ActionStateStart {
+		public final boolean initializeCrawling;
+		public final boolean levitating;
+		public final boolean running;
+
+		private ActionStateStart(boolean initializeCrawling, boolean levitating, boolean running) {
+			this.initializeCrawling = initializeCrawling;
+			this.levitating = levitating;
+			this.running = running;
+		}
+	}
+
+	public ActionStateStart beforeUpdateEntityActionState() {
 		jumpAvoided = false;
 
 		prevMaxExhaustionForAction = maxExhaustionForAction;
@@ -2155,8 +2149,14 @@ public class SMSelf extends SMBase implements ISMSelf {
 		if (!esp.movementInput.jump)
 			isStillSwimmingJump = false;
 
+		return new ActionStateStart(initializeCrawling, isLevitating, isRunning);
+	}
+
+	public void afterUpdateEntityActionState(boolean startSleeping, ActionStateStart start) {
+		boolean initializeCrawling = start.initializeCrawling;
+		boolean isLevitating = start.levitating;
+		boolean isRunning = start.running;
 		if (!startSleeping) {
-			isp.localUpdateEntityActionState();
 			isp.setMoveStrafingField(Math.signum(esp.movementInput.moveStrafe));
 			isp.setMoveForwardField(Math.signum(esp.movementInput.moveForward));
 			isp.setIsJumpingField(esp.movementInput.jump && !isCrawling && !isSliding
@@ -2386,8 +2386,8 @@ public class SMSelf extends SMBase implements ISMSelf {
 			else
 				minTickDistance = 0.07;
 
-			isClimbSprintSpeed = net.smart.render.statistics.SmartStatisticsFactory.getInstance(sp)
-					.getTickDistance() >= minTickDistance;
+			isClimbSprintSpeed = ((net.smart.moving.render.ISmartMovingRenderState) sp)
+					.smartMoving$getStatistics().getTickDistance() >= minTickDistance;
 		}
 
 		boolean canAnySprint = preferSprint && !sp.isBurning()
@@ -2891,8 +2891,7 @@ public class SMSelf extends SMBase implements ISMSelf {
 		jumpAvoided = true;
 	}
 
-	public void writeEntityToNBT(NBTTagCompound nBTTagCompound) {
-		isp.localWriteEntityToNBT(nBTTagCompound);
+	public void afterWriteEntityToNBT(NBTTagCompound nBTTagCompound) {
 		NBTTagCompound abilities = nBTTagCompound.getCompoundTag("abilities");
 		if (abilities.hasKey("flying"))
 			abilities.setBoolean("flying", sp.capabilities.isFlying);
@@ -2921,25 +2920,12 @@ public class SMSelf extends SMBase implements ISMSelf {
 		net.minecraftforge.common.ForgeHooks.onLivingJump(sp);
 	}
 
-	public float getFOVMultiplier() {
-		if (!Config.enabled)
-			return isp.localGetFOVMultiplier();
-
-		float landMovmentFactor = getLandMovementFactor();
-		setLandMovementFactor(fadingPerspectiveFactor);
-		float result = isp.localGetFOVMultiplier();
-		setLandMovementFactor(landMovmentFactor);
-		return result;
+	public double getFovMovementSpeed(double vanillaSpeed) {
+		return Config.enabled ? fadingPerspectiveFactor : vanillaSpeed;
 	}
 
 	public float getLandMovementFactor() {
 		return sp.getAIMoveSpeed();
-	}
-
-	public void setLandMovementFactor(float landMovementFactor) {
-		Reflect.SetField(ModifiableAttributeInstance.class,
-				sp.getEntityAttribute(SharedMonsterAttributes.MOVEMENT_SPEED),
-				SMInstall.ModifiableAttributeInstance_attributeValue, landMovementFactor);
 	}
 
 	public static boolean isRopeSliding() {

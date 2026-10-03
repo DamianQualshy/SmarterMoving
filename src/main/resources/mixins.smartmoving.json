@@ -1,0 +1,34 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "net.smart.moving.mixin",
+  "refmap": "mixins.smartmoving.refmap.json",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "server.NetHandlerPlayServerAccessor",
+    "server.MixinEntityPlayerMP",
+    "server.MixinEntityPlayerServerHooks",
+    "server.MixinEntityServerHooks"
+  ],
+  "client": [
+    "client.EntityAccessor",
+    "client.EntityLivingBaseAccessor",
+    "client.EntityPlayerAccessor",
+    "client.EntityPlayerSPAccessor",
+    "client.RenderLivingBaseAccessor",
+    "client.LayerArmorBaseAccessor",
+    "client.ModelRendererAccessor",
+    "client.ModelPlayerAccessor",
+    "client.MixinModelBiped",
+    "client.MixinModelPlayer",
+    "client.MixinRenderPlayer",
+    "client.MixinRenderLivingBaseNames",
+    "client.MixinEntityPlayerSP",
+    "client.MixinEntityPlayerClientHooks",
+    "client.MixinEntityLivingBaseClientHooks",
+    "client.MixinEntityClientHooks",
+    "client.MixinAbstractClientPlayer",
+    "client.MixinEntityOtherPlayerStatistics"
+  ],
+  "server": []
+}

@@ -25,43 +25,86 @@ import net.minecraft.client.*;
 import net.minecraft.client.entity.*;
 import net.minecraft.client.gui.*;
 import net.minecraft.client.gui.inventory.*;
+import net.minecraft.client.model.ModelBiped;
+import net.minecraft.client.renderer.entity.RenderPlayer;
+import net.minecraft.client.renderer.entity.layers.LayerArmorBase;
 import net.minecraft.util.*;
 import net.smart.moving.*;
+import net.smart.moving.mixin.client.LayerArmorBaseAccessor;
+import net.smart.moving.mixin.client.RenderLivingBaseAccessor;
 import net.smart.moving.model.IModelPlayer;
 import net.smart.moving.model.SMModel;
-import net.smart.render.statistics.*;
+import net.smart.moving.model.MovingModelCore;
+import net.smart.moving.util.MovingAngles;
 
 public class SMRender {
-	public static SMModel CurrentMainModel;
 	public static final int Scale = 0;
 	public static final int NoScaleStart = 1;
 	public static final int NoScaleEnd = 2;
 
-	public IRenderPlayer irp;
-
+	private final RenderPlayer renderer;
+	private AbstractClientPlayer currentPlayer;
+	private float currentYaw;
+	private float currentPartialTicks;
 	public final SMModel modelBipedMain;
+	private IModelPlayer[] models;
 
 	private static int _iOffset, _jOffset;
 	private static Minecraft _minecraft;
 
-	public SMRender(IRenderPlayer irp) {
-		this.irp = irp;
-
-		modelBipedMain = irp.getMovingModelBipedMain().getMovingModel();
-		SMModel modelArmor = irp.getMovingModelArmor().getMovingModel();
+	public SMRender(RenderPlayer renderer) {
+		this.renderer = renderer;
+		IModelPlayer[] ownedModels = getModels();
+		modelBipedMain = ownedModels[0].getMovingModel();
 
 		modelBipedMain.scaleArmType = Scale;
 		modelBipedMain.scaleLegType = Scale;
-		modelArmor.scaleArmType = NoScaleStart;
-		modelArmor.scaleLegType = Scale;
+		for (int i = 1; i < ownedModels.length; i++) {
+			SMModel armor = ownedModels[i].getMovingModel();
+			armor.scaleArmType = NoScaleStart;
+			armor.scaleLegType = Scale;
+		}
 	}
 
-	public void doRender(AbstractClientPlayer entityplayer, double d, double d1, double d2, float f,
+	private IModelPlayer[] getModels() {
+		if (models == null) {
+			java.util.List<IModelPlayer> owned = new java.util.ArrayList<IModelPlayer>();
+			owned.add(modelFor(renderer.getMainModel()));
+			for (Object layer : ((RenderLivingBaseAccessor) renderer).smartMoving$getLayerRenderers()) {
+				if (layer instanceof LayerArmorBase) {
+					LayerArmorBaseAccessor armor = (LayerArmorBaseAccessor) layer;
+					addModel(owned, (ModelBiped) armor.smartMoving$getModelArmor());
+					addModel(owned, (ModelBiped) armor.smartMoving$getModelLeggings());
+				}
+			}
+			models = owned.toArray(new IModelPlayer[owned.size()]);
+		}
+		return models;
+	}
+
+	private static void addModel(java.util.List<IModelPlayer> owned, ModelBiped model) {
+		if (model != null) {
+			IModelPlayer moving = modelFor(model);
+			if (moving != null && !owned.contains(moving))
+				owned.add(moving);
+		}
+	}
+
+	private static IModelPlayer modelFor(ModelBiped model) {
+		return (IModelPlayer) model;
+	}
+
+	public void beforeDoRender(AbstractClientPlayer entityplayer, double d, double d1, double d2, float f,
 			float renderPartialTicks) {
-		IModelPlayer[] modelPlayers = null;
+		currentPlayer = entityplayer;
+		currentYaw = f;
+		currentPartialTicks = renderPartialTicks;
+		IModelPlayer[] modelPlayers = getModels();
+		boolean isInventory = d == 0.0D && d1 == 0.0D && d2 == 0.0D && f == 0.0F
+				&& renderPartialTicks == 1.0F;
+		updateMotionModels(entityplayer, renderPartialTicks, isInventory, modelPlayers);
 		SMBase moving = SMFactory.getInstance(entityplayer);
 		if (moving != null) {
-			boolean isInventory = d == 0.0F && d1 == 0.0F && d2 == 0.0F && f == 0.0F && renderPartialTicks == 1.0F;
 
 			boolean isClimb = moving.isClimbing && !moving.isCrawling && !moving.isCrawlClimbing
 					&& !moving.isClimbJumping;
@@ -86,16 +129,12 @@ public class SMRender {
 			int angleJumpType = moving.angleJumpType;
 			boolean isRopeSliding = moving.isRopeSliding;
 
-			SmartStatistics statistics = SmartStatisticsFactory.getInstance(entityplayer);
-			float currentHorizontalSpeedFlattened = statistics != null
-					? statistics.getCurrentHorizontalSpeedFlattened(renderPartialTicks, -1)
-					: Float.NaN;
+			MovingStatistics statistics = ((ISmartMovingRenderState) entityplayer).smartMoving$getStatistics();
+			float currentHorizontalSpeedFlattened = statistics.getCurrentHorizontalSpeedFlattened(renderPartialTicks);
 			float smallOverGroundHeight = isCrawlClimb || isHeadJump ? (float) moving.getOverGroundHeight(5D) : 0F;
 			Block overGroundBlock = isHeadJump && smallOverGroundHeight < 5F
 					? moving.getOverGroundBlockId(smallOverGroundHeight)
 					: null;
-
-			modelPlayers = irp.getMovingModels();
 
 			for (int i = 0; i < modelPlayers.length; i++) {
 				SMModel modelPlayer = modelPlayers[i].getMovingModel();
@@ -126,74 +165,172 @@ public class SMRender {
 				modelPlayer.overGroundBlock = overGroundBlock;
 			}
 
-			if (!isInventory && entityplayer.isSneaking() && !(entityplayer instanceof EntityPlayerSP) && isCrawl)
-				d1 += 0.125D;
+		} else {
+			for (IModelPlayer model : modelPlayers)
+				model.getMovingModel().clearMovementFlags();
 		}
-
-		CurrentMainModel = modelBipedMain;
-		irp.superRenderDoRender(entityplayer, d, d1, d2, f, renderPartialTicks);
-		CurrentMainModel = null;
-
-		if (moving != null && moving.isLevitating && modelPlayers != null)
-			for (int i = 0; i < modelPlayers.length; i++)
-				modelPlayers[i].getMovingModel().md.currentHorizontalAngle = modelPlayers[i]
-						.getMovingModel().md.currentCameraAngle;
 	}
 
-	public void rotateCorpse(AbstractClientPlayer entityplayer, float totalTime, float actualRotation, float f2) {
+	private void updateMotionModels(AbstractClientPlayer player, float partialTicks, boolean inventory,
+			IModelPlayer[] models) {
+		MovingStatistics stats = ((ISmartMovingRenderState) player).smartMoving$getStatistics();
+		double dx = 0, dy = 0, dz = 0;
+		float cameraAngle = 0, verticalAngle = 0, horizontalAngle = 0;
+		if (!inventory) {
+			dx = player.posX - player.prevPosX;
+			dy = player.posY - player.prevPosY;
+			dz = player.posZ - player.prevPosZ;
+			cameraAngle = player.rotationYaw / MovingAngles.RadiantToAngle;
+			verticalAngle = (float) Math.atan(dy / Math.sqrt(dx * dx + dz * dz));
+			if (Float.isNaN(verticalAngle)) verticalAngle = MovingAngles.Quarter;
+			horizontalAngle = (float) -Math.atan(dx / dz);
+			if (Float.isNaN(horizontalAngle))
+				horizontalAngle = Float.isNaN(stats.prevHorizontalAngle)
+						? cameraAngle : stats.prevHorizontalAngle;
+			else if (dz < 0)
+				horizontalAngle += MovingAngles.Half;
+			stats.prevHorizontalAngle = horizontalAngle;
+		}
+		double horizontalDistance = Math.sqrt(dx * dx + dz * dz);
+		double verticalDistance = Math.abs(dy);
+		double distance = Math.sqrt(horizontalDistance * horizontalDistance + verticalDistance * verticalDistance);
+		MovingRenderData previous = ((ISmartMovingRenderState) player).smartMoving$getRenderData();
+		for (IModelPlayer model : models) {
+			MovingModelCore core = model.getMovingModel().md;
+			core.isInventory = inventory;
+			core.isSleeping = player.isPlayerSleeping();
+			core.totalVerticalDistance = stats.getTotalVerticalDistance(partialTicks);
+			core.currentVerticalSpeed = stats.getCurrentVerticalSpeed(partialTicks);
+			core.totalDistance = stats.getTotalDistance(partialTicks);
+			core.currentSpeed = stats.getCurrentSpeed(partialTicks);
+			core.distance = distance;
+			core.verticalDistance = verticalDistance;
+			core.horizontalDistance = horizontalDistance;
+			core.currentCameraAngle = cameraAngle;
+			core.currentVerticalAngle = verticalAngle;
+			core.currentHorizontalAngle = horizontalAngle;
+			core.prevOuterRenderData = previous;
+		}
+	}
+
+	public double modifyRenderY(double y) {
+		AbstractClientPlayer player = currentPlayer;
+		if (player == null)
+			return y;
+		SMBase moving = SMFactory.getInstance(player);
+		if (moving != null && !(player instanceof EntityPlayerSP) && moving.isCrawling
+				&& !moving.isClimbing && player.isSneaking()
+				&& !(y == 0.0D && currentYaw == 0.0F && currentPartialTicks == 1.0F))
+			return y + 0.125D;
+		return y;
+	}
+
+	public void afterDoRender(AbstractClientPlayer entityplayer) {
+		currentPlayer = null;
 		SMBase moving = SMFactory.getInstance(entityplayer);
+		if (moving != null && moving.isLevitating)
+			for (IModelPlayer modelPlayer : getModels())
+				modelPlayer.getMovingModel().md.currentHorizontalAngle = modelPlayer.getMovingModel().md.currentCameraAngle;
+	}
+
+	public float beforeRotateCorpse(AbstractClientPlayer entityplayer, float totalTime, float actualRotation, float f2) {
+		SMBase moving = SMFactory.getInstance(entityplayer);
+		boolean inventory = f2 == 1.0F && entityplayer instanceof EntityPlayerSP
+				&& Minecraft.getMinecraft().currentScreen instanceof GuiInventory;
 		if (moving != null) {
-			boolean isInventory = f2 == 1.0F && moving.isp != null
-					&& moving.isp.getMcField().currentScreen instanceof GuiInventory;
-			if (!isInventory) {
+			if (!inventory) {
 				float forwardRotation = entityplayer.prevRotationYaw
 						+ (entityplayer.rotationYaw - entityplayer.prevRotationYaw) * f2;
-
 				if (moving.isClimbing || moving.isClimbCrawling || moving.isCrawlClimbing || moving.isFlying
 						|| moving.isSwimming || moving.isDiving || moving.isCeilingClimbing || moving.isHeadJumping
 						|| moving.isSliding || moving.isAngleJumping())
 					entityplayer.renderYawOffset = forwardRotation;
 			}
 		}
-		irp.superRenderRotateCorpse(entityplayer, totalTime, actualRotation, f2);
+		if (inventory || entityplayer.isElytraFlying())
+			return actualRotation;
+		float forwardRotation = entityplayer.prevRotationYaw
+				+ (entityplayer.rotationYaw - entityplayer.prevRotationYaw) * f2;
+		if (entityplayer.isPlayerSleeping()) {
+			actualRotation = 0;
+			forwardRotation = 0;
+		}
+		Minecraft minecraft = Minecraft.getMinecraft();
+		float workingAngle;
+		if (!(entityplayer instanceof EntityPlayerSP))
+			workingAngle = -entityplayer.rotationYaw + minecraft.getRenderViewEntity().rotationYaw;
+		else
+			workingAngle = actualRotation - ((ISmartMovingRenderState) entityplayer)
+					.smartMoving$getRenderData().rotateAngleY * MovingAngles.RadiantToAngle;
+		if (minecraft.gameSettings.thirdPersonView == 2
+				&& minecraft.getRenderViewEntity() instanceof net.minecraft.entity.player.EntityPlayer
+				&& !((net.minecraft.entity.player.EntityPlayer) minecraft.getRenderViewEntity()).isPlayerSleeping())
+			workingAngle += 180F;
+		for (IModelPlayer model : getModels()) {
+			MovingModelCore core = model.getMovingModel().md;
+			core.actualRotation = actualRotation;
+			core.forwardRotation = forwardRotation;
+			core.workingAngle = workingAngle;
+		}
+		return 0;
 	}
 
-	public void renderLivingAt(AbstractClientPlayer entityplayer, double d, double d1, double d2) {
+	public double modifyLivingY(AbstractClientPlayer entityplayer, double y) {
 		if (entityplayer instanceof EntityOtherPlayerMP) {
 			SMBase moving = SMFactory.getOtherSmartMoving(entityplayer.getEntityId());
 			if (moving != null && moving.heightOffset != 0)
-				d1 += moving.heightOffset;
+				return y + moving.heightOffset;
 		}
-		irp.superRenderRenderLivingAt(entityplayer, d, d1, d2);
+		return y;
 	}
 
-	public void renderName(AbstractClientPlayer entityPlayer, double d, double d1, double d2) {
-		boolean changedIsSneaking = false, originalIsSneaking = false;
-		if (Minecraft.isGuiEnabled() && entityPlayer != irp.getMovingRenderManager().pointedEntity) {
+	public boolean beforeRenderName(AbstractClientPlayer entityPlayer) {
+		boolean originalIsSneaking = entityPlayer.isSneaking();
+		if (Minecraft.isGuiEnabled() && entityPlayer != renderer.getRenderManager().pointedEntity) {
 			SMBase moving = SMFactory.getInstance(entityPlayer);
 			if (moving != null) {
-				originalIsSneaking = entityPlayer.isSneaking();
 				boolean temporaryIsSneaking = originalIsSneaking;
 				if (moving.isCrawling && !moving.isClimbing)
 					temporaryIsSneaking = !SMContext.Config._crawlNameTag.value;
 				else if (originalIsSneaking)
 					temporaryIsSneaking = !SMContext.Config._sneakNameTag.value;
-
-				changedIsSneaking = temporaryIsSneaking != originalIsSneaking;
-				if (changedIsSneaking)
+				if (temporaryIsSneaking != originalIsSneaking)
 					entityPlayer.setSneaking(temporaryIsSneaking);
-
-				if (moving.heightOffset == -1)
-					d1 -= 0.2F;
-				else if (originalIsSneaking && !temporaryIsSneaking)
-					d1 -= 0.05F;
 			}
 		}
+		return originalIsSneaking;
+	}
 
-		irp.superRenderRenderName(entityPlayer, d, d1, d2);
+	public double modifyNameY(AbstractClientPlayer entityPlayer, double y, boolean originalIsSneaking) {
+		if (Minecraft.isGuiEnabled() && entityPlayer != renderer.getRenderManager().pointedEntity) {
+			SMBase moving = SMFactory.getInstance(entityPlayer);
+			if (moving != null) {
+				if (moving.heightOffset == -1)
+					return y - 0.2F;
+				if (originalIsSneaking && !entityPlayer.isSneaking())
+					return y - 0.05F;
+			}
+		}
+		return y;
+	}
 
-		if (changedIsSneaking)
-			entityPlayer.setSneaking(originalIsSneaking);
+	public void afterRenderName(AbstractClientPlayer player, boolean originalIsSneaking) {
+		if (player.isSneaking() != originalIsSneaking)
+			player.setSneaking(originalIsSneaking);
+	}
+
+	public void beforeLayers(AbstractClientPlayer player, float partialTicks) {
+		if (modelBipedMain.md.bipedEars != null)
+			modelBipedMain.md.bipedEars.beforeRender(player);
+		if (modelBipedMain.md.bipedCloak != null)
+			modelBipedMain.md.bipedCloak.beforeRender(player, partialTicks);
+	}
+
+	public void afterLayers() {
+		if (modelBipedMain.md.bipedCloak != null)
+			modelBipedMain.md.bipedCloak.afterRender();
+		if (modelBipedMain.md.bipedEars != null)
+			modelBipedMain.md.bipedEars.afterRender();
 	}
 
 	public static void renderGuiIngame(Minecraft minecraft) {

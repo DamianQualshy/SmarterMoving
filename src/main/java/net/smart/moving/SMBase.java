@@ -17,9 +17,9 @@
 
 package net.smart.moving;
 
-import static net.smart.render.SRUtilities.Half;
-import static net.smart.render.SRUtilities.Quarter;
-import static net.smart.render.SRUtilities.RadiantToAngle;
+import static net.smart.moving.util.MovingAngles.Half;
+import static net.smart.moving.util.MovingAngles.Quarter;
+import static net.smart.moving.util.MovingAngles.RadiantToAngle;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,6 +46,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.smart.moving.config.SMOptions;
+import net.smart.moving.render.ISmartMovingRenderState;
 import net.smart.utilities.BlockWallUtil;
 
 public abstract class SMBase {
@@ -530,7 +531,7 @@ public abstract class SMBase {
 		}
 	}
 
-	public boolean isInsideOfMaterial(Material material) {
+	public Boolean getMaterialOverride(Material material) {
 		if (SMOptions.hasFiniteLiquid && material == Material.WATER) {
 			double d = sp.posY + sp.getEyeHeight();
 			int i = MathHelper.floor(sp.posX);
@@ -546,7 +547,7 @@ public abstract class SMBase {
 				return false;
 			}
 		}
-		return isp.localIsInsideOfMaterial(material);
+		return null;
 	}
 
 	public int calculateSeparateCollisions(double x, double y, double z) {
@@ -925,13 +926,13 @@ public abstract class SMBase {
 	}
 
 	protected void onStartClimbBackJump() {
-		net.smart.render.render.SRRenderer.getPreviousRendererData(sp).rotateAngleY += isHeadJumping ? Half : Quarter;
+		((ISmartMovingRenderState) sp).smartMoving$getRenderData().rotateAngleY += isHeadJumping ? Half : Quarter;
 		isClimbBackJumping = true;
 	}
 
 	protected void onStartWallJump(Float angle) {
 		if (angle != null)
-			net.smart.render.render.SRRenderer.getPreviousRendererData(sp).rotateAngleY = angle / RadiantToAngle;
+			((ISmartMovingRenderState) sp).smartMoving$getRenderData().rotateAngleY = angle / RadiantToAngle;
 		isWallJumping = true;
 		sp.fallDistance = 0F;
 	}

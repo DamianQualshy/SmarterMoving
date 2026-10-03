@@ -17,7 +17,7 @@
 
 package net.smart.moving;
 
-import net.smart.utilities.Name;
+import net.smart.moving.util.Name;
 
 public class SMInstall {
 	public final static Name RopesPlusCore = new Name("atomicstryker.ropesplus.common.RopesPlusCore");
@@ -34,9 +34,6 @@ public class SMInstall {
 	public final static Name CarpentersTEBaseBlock = new Name("carpentersblocks.tileentity.TEBase");
 	public final static Name CarpentersBlockProperties_getMetadata = new Name("getMetadata");
 
-	public final static Name NetServerHandler_ticksForFloatKick = new Name("floatingTickCount", "field_147365_f", "f");
 	public final static Name GuiNewChat_chatMessageList = new Name("chatLines", "field_146252_h", "h");
 	public final static Name PlayerControllerMP_currentGameType = new Name("currentGameType", "field_78779_k", "k");
-	public final static Name ModifiableAttributeInstance_attributeValue = new Name("cachedValue", "field_111139_h",
-			"h");
 }

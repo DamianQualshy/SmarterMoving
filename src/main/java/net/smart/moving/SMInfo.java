@@ -28,5 +28,6 @@ public class SMInfo {
 	public static final String ModComVersion = SMMod.ModComVersion;
 
 	public static final String ModComMessage = ModName + " uses communication protocol " + ModComVersion;
-	public static final String ModComId = ModName.replace(" ", "") + " " + ModComVersion;
+	// Preserve the existing network channel across the display-name change.
+	public static final String ModComId = "SmartMoving " + ModComVersion;
 }

@@ -20,26 +20,24 @@ package net.smart.moving.model;
 import static net.smart.moving.render.SMRender.NoScaleEnd;
 import static net.smart.moving.render.SMRender.NoScaleStart;
 import static net.smart.moving.render.SMRender.Scale;
-import static net.smart.render.SRUtilities.Eighth;
-import static net.smart.render.SRUtilities.Half;
-import static net.smart.render.SRUtilities.Quarter;
-import static net.smart.render.SRUtilities.RadiantToAngle;
-import static net.smart.render.SRUtilities.Sixteenth;
-import static net.smart.render.SRUtilities.Sixtyfourth;
-import static net.smart.render.SRUtilities.Thirtytwoth;
-import static net.smart.render.SRUtilities.Whole;
+import static net.smart.moving.util.MovingAngles.Eighth;
+import static net.smart.moving.util.MovingAngles.Half;
+import static net.smart.moving.util.MovingAngles.Quarter;
+import static net.smart.moving.util.MovingAngles.RadiantToAngle;
+import static net.smart.moving.util.MovingAngles.Sixteenth;
+import static net.smart.moving.util.MovingAngles.Sixtyfourth;
+import static net.smart.moving.util.MovingAngles.Thirtytwoth;
+import static net.smart.moving.util.MovingAngles.Whole;
 
 import net.minecraft.block.Block;
 import net.minecraft.util.math.MathHelper;
 import net.smart.moving.SMFeetClimbing;
 import net.smart.moving.SMHandsClimbing;
 import net.smart.moving.render.SMRender;
-import net.smart.render.model.SRModelRotationRenderer;
 
 public class SMModel {
-	public IModelPlayer imp;
 	public net.minecraft.client.model.ModelBiped mb;
-	public net.smart.render.model.SRModel md;
+	public MovingModelCore md;
 
 	public boolean isStandard;
 
@@ -73,38 +71,18 @@ public class SMModel {
 	public int scaleArmType;
 	public int scaleLegType;
 
-	public SMModel(net.smart.render.model.IModelPlayer md, IModelPlayer imp) {
-		this.imp = imp;
-		this.md = md.getRenderModel();
-		this.mb = this.md.mp;
+	public SMModel(net.minecraft.client.model.ModelBiped model) {
+		this.mb = model;
+		this.md = new MovingModelCore(model, this);
+	}
 
-		if (SMRender.CurrentMainModel != null) {
-			isClimb = SMRender.CurrentMainModel.isClimb;
-			isClimbJump = SMRender.CurrentMainModel.isClimbJump;
-			handsClimbType = SMRender.CurrentMainModel.handsClimbType;
-			feetClimbType = SMRender.CurrentMainModel.feetClimbType;
-			isHandsVineClimbing = SMRender.CurrentMainModel.isHandsVineClimbing;
-			isFeetVineClimbing = SMRender.CurrentMainModel.isFeetVineClimbing;
-			isCeilingClimb = SMRender.CurrentMainModel.isCeilingClimb;
-			isSwim = SMRender.CurrentMainModel.isSwim;
-			isDive = SMRender.CurrentMainModel.isDive;
-			isCrawl = SMRender.CurrentMainModel.isCrawl;
-			isCrawlClimb = SMRender.CurrentMainModel.isCrawlClimb;
-			isJump = SMRender.CurrentMainModel.isJump;
-			isHeadJump = SMRender.CurrentMainModel.isHeadJump;
-			isSlide = SMRender.CurrentMainModel.isSlide;
-			isFlying = SMRender.CurrentMainModel.isFlying;
-			isLevitate = SMRender.CurrentMainModel.isLevitate;
-			isFalling = SMRender.CurrentMainModel.isFalling;
-			isGenericSneaking = SMRender.CurrentMainModel.isGenericSneaking;
-			isAngleJumping = SMRender.CurrentMainModel.isAngleJumping;
-			angleJumpType = SMRender.CurrentMainModel.angleJumpType;
-			isRopeSliding = SMRender.CurrentMainModel.isRopeSliding;
-
-			currentHorizontalSpeedFlattened = SMRender.CurrentMainModel.currentHorizontalSpeedFlattened;
-			smallOverGroundHeight = SMRender.CurrentMainModel.smallOverGroundHeight;
-			overGroundBlock = SMRender.CurrentMainModel.overGroundBlock;
-		}
+	public void clearMovementFlags() {
+		isClimb = isClimbJump = isHandsVineClimbing = isFeetVineClimbing = isCeilingClimb = false;
+		isSwim = isDive = isCrawl = isCrawlClimb = isJump = isHeadJump = false;
+		isFlying = isSlide = isLevitate = isFalling = isGenericSneaking = false;
+		isAngleJumping = isRopeSliding = false;
+		currentHorizontalSpeedFlattened = Float.NaN;
+		overGroundBlock = null;
 	}
 
 	private void setRotationAngles(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
@@ -125,18 +103,18 @@ public class SMModel {
 		if (!Float.isNaN(currentHorizontalSpeedFlattened))
 			currentHorizontalSpeed = currentHorizontalSpeedFlattened;
 
-		SRModelRotationRenderer bipedOuter = md.bipedOuter;
-		SRModelRotationRenderer bipedTorso = md.bipedTorso;
-		SRModelRotationRenderer bipedBody = md.bipedBody;
-		SRModelRotationRenderer bipedBreast = md.bipedBreast;
-		SRModelRotationRenderer bipedHead = md.bipedHead;
-		SRModelRotationRenderer bipedRightShoulder = md.bipedRightShoulder;
-		SRModelRotationRenderer bipedRightArm = md.bipedRightArm;
-		SRModelRotationRenderer bipedLeftShoulder = md.bipedLeftShoulder;
-		SRModelRotationRenderer bipedLeftArm = md.bipedLeftArm;
-		SRModelRotationRenderer bipedPelvic = md.bipedPelvic;
-		SRModelRotationRenderer bipedRightLeg = md.bipedRightLeg;
-		SRModelRotationRenderer bipedLeftLeg = md.bipedLeftLeg;
+		MovingRotationRenderer bipedOuter = md.bipedOuter;
+		MovingRotationRenderer bipedTorso = md.bipedTorso;
+		MovingRotationRenderer bipedBody = md.bipedBody;
+		MovingRotationRenderer bipedBreast = md.bipedBreast;
+		MovingRotationRenderer bipedHead = md.bipedHead;
+		MovingRotationRenderer bipedRightShoulder = md.bipedRightShoulder;
+		MovingRotationRenderer bipedRightArm = md.bipedRightArm;
+		MovingRotationRenderer bipedLeftShoulder = md.bipedLeftShoulder;
+		MovingRotationRenderer bipedLeftArm = md.bipedLeftArm;
+		MovingRotationRenderer bipedPelvic = md.bipedPelvic;
+		MovingRotationRenderer bipedRightLeg = md.bipedRightLeg;
+		MovingRotationRenderer bipedLeftLeg = md.bipedLeftLeg;
 
 		if (isRopeSliding) {
 			float time = totalTime * 0.15F;
@@ -170,8 +148,8 @@ public class SMModel {
 			bipedHead.rotateAngleY = 0.0F;
 			bipedHead.rotateAngleX = viewVerticalAngelOffset / RadiantToAngle;
 
-			bipedLeftLeg.rotationOrder = SRModelRotationRenderer.YZX;
-			bipedRightLeg.rotationOrder = SRModelRotationRenderer.YZX;
+			bipedLeftLeg.rotationOrder = MovingRotationRenderer.YZX;
+			bipedRightLeg.rotationOrder = MovingRotationRenderer.YZX;
 
 			float handsFrequenceUpFactor, handsDistanceUpFactor, handsDistanceUpOffset, feetFrequenceUpFactor,
 					feetDistanceUpFactor, feetDistanceUpOffset;
@@ -359,7 +337,7 @@ public class SMModel {
 			float horizontalAngle = horizontalDistance < (isGenericSneaking ? 0.005 : 0.015F) ? currentCameraAngle
 					: currentHorizontalAngle;
 
-			bipedHead.rotationOrder = SRModelRotationRenderer.YXZ;
+			bipedHead.rotationOrder = MovingRotationRenderer.YXZ;
 			bipedHead.rotateAngleY = MathHelper.cos(distance / 2.0F - Quarter) * walkFactor;
 			bipedHead.rotateAngleX = -Eighth * standSneakFactor;
 			bipedHead.rotationPointZ = -2F;
@@ -370,8 +348,8 @@ public class SMModel {
 
 			bipedBreast.rotateAngleY = bipedBody.rotateAngleY = MathHelper.cos(distance / 2.0F - Quarter) * walkFactor;
 
-			bipedRightArm.rotationOrder = SRModelRotationRenderer.YZX;
-			bipedLeftArm.rotationOrder = SRModelRotationRenderer.YZX;
+			bipedRightArm.rotationOrder = MovingRotationRenderer.YZX;
+			bipedLeftArm.rotationOrder = MovingRotationRenderer.YZX;
 
 			bipedRightArm.rotateAngleZ = Quarter + Eighth + MathHelper.cos(totalTime * 0.1F) * standSneakFactor * 0.8F;
 			bipedLeftArm.rotateAngleZ = -Quarter - Eighth - MathHelper.cos(totalTime * 0.1F) * standSneakFactor * 0.8F;
@@ -435,7 +413,7 @@ public class SMModel {
 			bipedHead.rotateAngleX = -Eighth;
 			bipedHead.rotationPointZ = -2F;
 
-			bipedTorso.rotationOrder = SRModelRotationRenderer.YZX;
+			bipedTorso.rotationOrder = MovingRotationRenderer.YZX;
 			bipedTorso.rotateAngleX = Quarter - Thirtytwoth;
 			bipedTorso.rotationPointY = 3F;
 			bipedTorso.rotateAngleZ = MathHelper.cos(distance + Quarter) * Sixtyfourth * walkFactor;
@@ -455,8 +433,8 @@ public class SMModel {
 				setLegScales(1F + (MathHelper.cos(distance + Quarter - Quarter) - 1F) * 0.25F * walkFactor,
 						1F + (MathHelper.cos(distance - Quarter - Quarter) - 1F) * 0.25F * walkFactor);
 
-			bipedRightArm.rotationOrder = SRModelRotationRenderer.YZX;
-			bipedLeftArm.rotationOrder = SRModelRotationRenderer.YZX;
+			bipedRightArm.rotationOrder = MovingRotationRenderer.YZX;
+			bipedLeftArm.rotationOrder = MovingRotationRenderer.YZX;
 
 			bipedRightArm.rotateAngleX = Half + Eighth;
 			bipedLeftArm.rotateAngleX = Half + Eighth;
@@ -485,7 +463,7 @@ public class SMModel {
 			bipedOuter.rotationPointY = 5F;
 			bipedOuter.rotateAngleX = Quarter;
 
-			bipedBody.rotationOrder = SRModelRotationRenderer.YXZ;
+			bipedBody.rotationOrder = MovingRotationRenderer.YXZ;
 			bipedBody.offsetY = -0.4F;
 			bipedBody.rotationPointY = +6.5F;
 			bipedBody.rotateAngleX = MathHelper.cos(distance - Eighth) * Sixtyfourth * walkFactor;
@@ -497,8 +475,8 @@ public class SMModel {
 			bipedRightLeg.rotateAngleZ = Thirtytwoth;
 			bipedLeftLeg.rotateAngleZ = -Thirtytwoth;
 
-			bipedRightArm.rotationOrder = SRModelRotationRenderer.YZX;
-			bipedLeftArm.rotationOrder = SRModelRotationRenderer.YZX;
+			bipedRightArm.rotationOrder = MovingRotationRenderer.YZX;
+			bipedLeftArm.rotationOrder = MovingRotationRenderer.YZX;
 
 			bipedRightArm.rotateAngleX = MathHelper.cos(distance + Quarter) * Sixtyfourth * walkFactor + Half
 					- Sixtyfourth;
@@ -523,8 +501,8 @@ public class SMModel {
 
 			bipedHead.rotateAngleX = -bipedOuter.rotateAngleX / 2F;
 
-			bipedRightArm.rotationOrder = SRModelRotationRenderer.XZY;
-			bipedLeftArm.rotationOrder = SRModelRotationRenderer.XZY;
+			bipedRightArm.rotationOrder = MovingRotationRenderer.XZY;
+			bipedLeftArm.rotationOrder = MovingRotationRenderer.XZY;
 
 			bipedRightArm.rotateAngleY = (MathHelper.cos(time) * Sixteenth) * standFactor;
 			bipedLeftArm.rotateAngleY = (MathHelper.cos(time) * Sixteenth) * standFactor;
@@ -569,8 +547,8 @@ public class SMModel {
 		} else if (isFalling) {
 			float distance = totalDistance * 0.1F;
 
-			bipedRightArm.rotationOrder = SRModelRotationRenderer.XZY;
-			bipedLeftArm.rotationOrder = SRModelRotationRenderer.XZY;
+			bipedRightArm.rotationOrder = MovingRotationRenderer.XZY;
+			bipedLeftArm.rotationOrder = MovingRotationRenderer.XZY;
 
 			bipedRightArm.rotateAngleY = (MathHelper.cos(distance + Quarter) * Eighth);
 			bipedLeftArm.rotateAngleY = (MathHelper.cos(distance + Quarter) * Eighth);
@@ -607,8 +585,8 @@ public class SMModel {
 		md.bipedLeftLeg.rotateAngleZ = Thirtytwoth * backness;
 		md.bipedRightLeg.rotateAngleZ = -Thirtytwoth * backness;
 
-		md.bipedLeftLeg.rotationOrder = SRModelRotationRenderer.ZXY;
-		md.bipedRightLeg.rotationOrder = SRModelRotationRenderer.ZXY;
+		md.bipedLeftLeg.rotationOrder = MovingRotationRenderer.ZXY;
+		md.bipedRightLeg.rotationOrder = MovingRotationRenderer.ZXY;
 
 		md.bipedLeftArm.rotateAngleZ = -Sixteenth * rightness;
 		md.bipedRightArm.rotateAngleZ = Sixteenth * leftness;
@@ -622,7 +600,7 @@ public class SMModel {
 		md.bipedRightShoulder.rotateAngleX = viewVerticalAngelOffset / RadiantToAngle;
 		md.bipedRightShoulder.rotateAngleY = md.workingAngle / RadiantToAngle;
 		md.bipedRightShoulder.rotateAngleZ = Half;
-		md.bipedRightShoulder.rotationOrder = SRModelRotationRenderer.ZYX;
+		md.bipedRightShoulder.rotationOrder = MovingRotationRenderer.ZYX;
 		md.bipedRightArm.reset();
 	}
 
@@ -631,12 +609,12 @@ public class SMModel {
 		md.bipedRightShoulder.ignoreSuperRotation = true;
 		md.bipedRightShoulder.rotateAngleY = md.workingAngle / RadiantToAngle;
 		md.bipedRightShoulder.rotateAngleZ = Half;
-		md.bipedRightShoulder.rotationOrder = SRModelRotationRenderer.ZYX;
+		md.bipedRightShoulder.rotationOrder = MovingRotationRenderer.ZYX;
 
 		md.bipedLeftShoulder.ignoreSuperRotation = true;
 		md.bipedLeftShoulder.rotateAngleY = md.workingAngle / RadiantToAngle;
 		md.bipedLeftShoulder.rotateAngleZ = Half;
-		md.bipedLeftShoulder.rotationOrder = SRModelRotationRenderer.ZYX;
+		md.bipedLeftShoulder.rotationOrder = MovingRotationRenderer.ZYX;
 
 		md.bipedRightArm.reset();
 		md.bipedLeftArm.reset();
@@ -649,8 +627,7 @@ public class SMModel {
 		md.bipedOuter.rotateAngleY = 0;
 		md.bipedHead.rotateAngleX = 0;
 
-		imp.superAnimateBowAiming(totalHorizontalDistance, currentHorizontalSpeed, totalTime, viewHorizontalAngelOffset,
-				viewVerticalAngelOffset, factor);
+		md.animateBowAiming(totalTime);
 
 		md.bipedHead.rotateAngleY = headRotateAngleY;
 		md.bipedOuter.rotateAngleY = outerRotateAngleY;
@@ -663,15 +640,13 @@ public class SMModel {
 				viewVerticalAngelOffset, factor);
 
 		if (isStandard)
-			imp.superAnimateHeadRotation(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+			md.animateHeadRotation(viewHorizontalAngelOffset, viewVerticalAngelOffset);
 	}
 
 	public void animateSleeping(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
 			float viewHorizontalAngelOffset, float viewVerticalAngelOffset, float factor) {
 		if (isStandard)
-			imp.superAnimateSleeping(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+			md.animateSleeping();
 	}
 
 	public void animateArmSwinging(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
@@ -680,36 +655,31 @@ public class SMModel {
 			if (isAngleJumping)
 				animateAngleJumping();
 			else
-				imp.superAnimateArmSwinging(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-						viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+				md.animateArmSwinging(totalHorizontalDistance, currentHorizontalSpeed);
 	}
 
 	public void animateRiding(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
 			float viewHorizontalAngelOffset, float viewVerticalAngelOffset, float factor) {
 		if (isStandard)
-			imp.superAnimateRiding(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+			md.animateRiding();
 	}
 
 	public void animateLeftArmItemHolding(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
 			float viewHorizontalAngelOffset, float viewVerticalAngelOffset, float factor) {
 		if (isStandard)
-			imp.superAnimateLeftArmItemHolding(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+			md.animateLeftArmItemHolding();
 	}
 
 	public void animateRightArmItemHolding(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
 			float viewHorizontalAngelOffset, float viewVerticalAngelOffset, float factor) {
 		if (isStandard)
-			imp.superAnimateRightArmItemHolding(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+			md.animateRightArmItemHolding();
 	}
 
 	public void animateWorkingBody(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
 			float viewHorizontalAngelOffset, float viewVerticalAngelOffset, float factor) {
 		if (isStandard)
-			imp.superAnimateWorkingBody(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+			md.animateWorkingBody();
 		else if (isWorking())
 			animateNonStandardWorking(viewVerticalAngelOffset);
 	}
@@ -717,29 +687,25 @@ public class SMModel {
 	public void animateWorkingArms(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
 			float viewHorizontalAngelOffset, float viewVerticalAngelOffset, float factor) {
 		if (isStandard || isWorking())
-			imp.superAnimateWorkingArms(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+			md.animateWorkingArms();
 	}
 
 	public void animateSneaking(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
 			float viewHorizontalAngelOffset, float viewVerticalAngelOffset, float factor) {
 		if (isStandard && !isAngleJumping)
-			imp.superAnimateSneaking(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+			md.animateSneaking();
 	}
 
 	public void animateArms(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
 			float viewHorizontalAngelOffset, float viewVerticalAngelOffset, float factor) {
 		if (isStandard)
-			imp.superApplyAnimationOffsets(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+			md.animateArms(totalTime);
 	}
 
 	public void animateBowAiming(float totalHorizontalDistance, float currentHorizontalSpeed, float totalTime,
 			float viewHorizontalAngelOffset, float viewVerticalAngelOffset, float factor) {
 		if (isStandard)
-			imp.superAnimateBowAiming(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
-					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);
+			md.animateBowAiming(totalTime);
 		else
 			animateNonStandardBowAiming(totalHorizontalDistance, currentHorizontalSpeed, totalTime,
 					viewHorizontalAngelOffset, viewVerticalAngelOffset, factor);

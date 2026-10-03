@@ -28,7 +28,7 @@ import net.smart.moving.SMContext;
 import net.smart.moving.SMInfo;
 import net.smart.moving.SMInstall;
 import net.smart.properties.Property;
-import net.smart.utilities.Reflect;
+import net.smart.moving.util.Reflect;
 
 import java.io.File;
 import java.lang.reflect.Field;

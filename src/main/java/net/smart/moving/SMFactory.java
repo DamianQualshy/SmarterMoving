@@ -22,7 +22,6 @@ import java.util.Iterator;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityOtherPlayerMP;
-import net.minecraft.client.entity.EntityPlayerSP;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 
@@ -94,8 +93,6 @@ public class SMFactory {
 			return doGetOtherSmartMoving(entityPlayer.getEntityId());
 		else if (entityPlayer instanceof IEntityPlayerSP)
 			return ((IEntityPlayerSP) entityPlayer).getMoving();
-		if (entityPlayer instanceof EntityPlayerSP)
-			return SMPlayerBase.getPlayerBase((EntityPlayerSP) entityPlayer).getMoving();
 		return null;
 	}
 
