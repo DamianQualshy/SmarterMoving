@@ -21,30 +21,21 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
-import api.player.forge.PlayerAPIPlugin;
-import api.player.model.ModelPlayerAPI;
-import api.player.model.ModelPlayerBaseSorting;
-import api.player.render.RenderPlayerAPI;
-import api.player.render.RenderPlayerBaseSorting;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.*;
 import net.minecraftforge.fml.common.Mod.EventHandler;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
-import net.minecraftforge.fml.common.event.FMLPostInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
 import net.smart.moving.config.SMConfig;
 import net.smart.moving.config.SMOptions;
-import net.smart.moving.model.SMModelPlayerBase;
-import net.smart.moving.render.SMRenderPlayerBase;
-import net.smart.render.SRInfo;
-import net.smart.utilities.Reflect;
+import net.smart.moving.util.Reflect;
 
 @Mod(modid = SMMod.ID, name = SMMod.NAME, version = SMMod.VERSION, useMetadata = true)
 public class SMMod {
 	final static String ID = "smartmoving";
-	final static String NAME = "Smart Moving";
+	final static String NAME = "Smarter Moving";
 	final static String VERSION = "@VERSION@";
 
 	protected static String ModComVersion = "2.4";
@@ -59,8 +50,6 @@ public class SMMod {
 
 	@EventHandler
 	public void preInit(FMLPreInitializationEvent event) {
-		if (isClient)
-			register();
 	}
 
 	@EventHandler
@@ -68,8 +57,6 @@ public class SMMod {
 		SMPacketHandler.registerPackets();
 		
 		if (isClient) {
-			SMPlayerBase.registerPlayerBase();
-			SMServerPlayerBase.registerPlayerBase();
 			SMServerComm.localUserNameProvider = new SMLocalUserNameProvider();
 			MinecraftForge.EVENT_BUS.register(this);
 			SMFactory.initialize();
@@ -80,30 +67,9 @@ public class SMMod {
 					FMLCommonHandler.instance().getMinecraftServerInstance().getGameType().getID(), new SMConfig());
 	}
 
-	@EventHandler
-	public void postInit(FMLPostInitializationEvent event) {
-		if (!isClient)
-			SMServerPlayerBase.registerPlayerBase();
-	}
-
 	@SubscribeEvent
 	public void tickStart(ClientTickEvent event) {
 		SMContext.onTickInGame();
-	}
-
-	private void register() {
-		String[] inferiors = new String[] { SRInfo.ModName };
-
-		RenderPlayerBaseSorting renderSorting = new RenderPlayerBaseSorting();
-		renderSorting.setAfterLocalConstructingInferiors(inferiors);
-		renderSorting.setOverrideDoRenderInferiors(inferiors);
-		renderSorting.setOverrideRotateCorpseInferiors(inferiors);
-		renderSorting.setOverrideRenderLivingAtInferiors(inferiors);
-		RenderPlayerAPI.register(NAME, SMRenderPlayerBase.class, renderSorting);
-
-		ModelPlayerBaseSorting modelSorting = new ModelPlayerBaseSorting();
-		modelSorting.setAfterLocalConstructingInferiors(inferiors);
-		ModelPlayerAPI.register(NAME, SMModelPlayerBase.class, modelSorting);
 	}
 
 	private void checkForMods() {

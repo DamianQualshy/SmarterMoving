@@ -16,6 +16,12 @@ out
 # gradle
 build
 .gradle
+.local-tools
+
+# Historical submodule checkouts kept locally as source references only.
+/PlayerAPI/
+/RenderPlayerAPI/
+/SmartRender/
 
 # other
 eclipse

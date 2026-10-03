@@ -20,7 +20,6 @@ package net.smart.moving;
 import java.io.File;
 import java.util.List;
 
-import api.player.server.IServerPlayerAPI;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraftforge.fml.common.FMLCommonHandler;
@@ -175,8 +174,7 @@ public class SMServer {
 				.getPlayers();
 		IEntityPlayerMP[] result = new IEntityPlayerMP[playerEntityList.size()];
 		for (int i = 0; i < playerEntityList.size(); i++)
-			result[i] = (IEntityPlayerMP) ((IServerPlayerAPI) playerEntityList.get(i))
-					.getServerPlayerBase(SMInfo.ModName);
+			result[i] = (IEntityPlayerMP) playerEntityList.get(i);
 		return result;
 	}
 
@@ -269,22 +267,4 @@ public class SMServer {
 		}
 	}
 
-	public boolean isEntityInsideOpaqueBlock() {
-		if (crawlingCooldown > 0)
-			return false;
-
-		return mp.localIsEntityInsideOpaqueBlock();
-	}
-
-	public void addMovementStat(double var1, double var3, double var5) {
-		mp.localAddMovementStat(var1, var3, var5);
-	}
-
-	public void addExhaustion(float exhaustion) {
-		mp.localAddExhaustion(exhaustion);
-	}
-
-	public boolean isSneaking() {
-		return mp.getItemInUseCount() > 0 || mp.localIsSneaking();
-	}
 }

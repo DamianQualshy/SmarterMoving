@@ -1,12 +1,12 @@
 [{
   "modid": "smartmoving",
-  "name": "Smart Moving",
+  "name": "Smarter Moving",
   "version": "${version}",
   "mcversion": "${mcversion}",
-  "description": "The Smart Moving mod provides various additional moving possibilities:\n\n * Climbing only via gaps in the walls\n * Climbing ladders with different speeds depending on ladder coverage and/or neighbour blocks\n * Alternative animations for flying and falling\n * Climbing along ceilings and up vines\n * Jumping up & back while climbing\n * Configurable sneaking\n * Alternative swimming\n * Alternative diving\n * Alternative flying\n * Faster sprinting\n * Side & Back jumps\n * Charged jumps\n * Wall jumping\n * Head jumps\n * Crawling\n * Sliding",
-  "authorList": [ "doch13_(도치)" ],
-  "credits": "Divisor, JonnyNova, elveskevtar, _DarKShaM_, Cassiobsk8, Dunncann for translations",
-  "url": "https://github.com/doch2/SmartMovingReboot.git",
-  "dependencies": [ "PlayerAPI", "Smart Render", "RenderPlayerAPI" ],
-  "requiredMods": [ "Forge@[14.23.5.2854,)", "Smart Render@[3.0-RC2,)", "PlayerAPI@[1.1,)" ]
+  "description": "Smarter Moving adds climbing, crawling, sliding, swimming, diving, sprinting, jumping, and alternative movement animations.",
+  "authorList": [ "DamianQ" ],
+  "credits": "doch13_(도치) and everyone else who made SmartMoving forks and continuations.",
+  "url": "https://github.com/DamianQualshy/SmarterMoving.git",
+  "dependencies": [],
+  "requiredMods": [ "Forge@[14.23.5.2854,)" ]
 }]

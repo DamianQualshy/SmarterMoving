@@ -17,11 +17,7 @@
 
 package net.smart.moving;
 
-import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
-import net.minecraft.entity.MoverType;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.nbt.NBTTagCompound;
 
 public interface IEntityPlayerSP {
 	SMBase getMoving();
@@ -42,21 +38,6 @@ public interface IEntityPlayerSP {
 
 	void setIsJumpingField(boolean flag);
 
-	void localMoveEntity(MoverType mover, double d, double d1, double d2);
-
-	EntityPlayer.SleepResult localSleepInBedAt(int i, int j, int k);
-
-	float localGetBrightness();
-
-	int localGetBrightnessForRender();
-
-	void localUpdateEntityActionState();
-
-	boolean localIsInsideOfMaterial(Material material);
-
-	void localWriteEntityToNBT(NBTTagCompound nBTTagCompound);
-
 	boolean localIsSneaking();
 
-	float localGetFOVMultiplier();
 }

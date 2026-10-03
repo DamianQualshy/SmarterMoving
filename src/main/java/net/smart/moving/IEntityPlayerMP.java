@@ -43,7 +43,6 @@ public interface IEntityPlayerMP extends IPacketSender {
 
 	void setMaxY(double maxY);
 
-	boolean localIsEntityInsideOpaqueBlock();
 
 	SMServer getMoving();
 
@@ -61,11 +60,8 @@ public interface IEntityPlayerMP extends IPacketSender {
 
 	void localAddExhaustion(float exhaustion);
 
-	void localAddMovementStat(double x, double y, double z);
 
 	void localPlaySound(String soundId, float volume, float pitch);
 
-	boolean localIsSneaking();
 
-	int getItemInUseCount();
 }

@@ -52,8 +52,8 @@ import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 import net.smart.moving.config.SMOptions;
 import net.smart.utilities.BlockWallUtil;
-import net.smart.utilities.Name;
-import net.smart.utilities.Reflect;
+import net.smart.moving.util.Name;
+import net.smart.moving.util.Reflect;
 
 public class SMOrientation {
 	public static final Set<SMOrientation> Orthogonals = new HashSet<SMOrientation>();

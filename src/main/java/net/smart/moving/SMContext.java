@@ -26,7 +26,6 @@ import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.smart.moving.config.SMClientConfig;
 import net.smart.moving.config.SMOptions;
-import net.smart.render.statistics.SmartStatisticsContext;
 
 public abstract class SMContext {
 	public static final SMClient Client = new SMClient();
@@ -49,9 +48,7 @@ public abstract class SMContext {
 	}
 
 	public static void initialize() {
-		if (!initialized)
-			SmartStatisticsContext.setCalculateHorizontalStats(true);
-		else
+		if (initialized)
 			return;
 
 		ClientRegistry.registerKeyBinding(Options.keyBindGrab);

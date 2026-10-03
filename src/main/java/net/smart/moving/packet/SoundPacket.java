@@ -9,7 +9,7 @@ import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 import net.smart.moving.SMComm;
 import net.smart.moving.SMPacketHandler;
 import net.smart.moving.SMServerComm;
-import net.smart.moving.SMServerPlayerBase;
+import net.smart.moving.IEntityPlayerMP;
 
 public class SoundPacket implements IMessage {
 	
@@ -60,7 +60,7 @@ public class SoundPacket implements IMessage {
 
 		@Override
 		public IMessage onMessage(SoundPacket message, MessageContext ctx) {
-			SMServerPlayerBase serverPlayer = SMServerPlayerBase.getPlayerBase(ctx.getServerHandler().player);
+			IEntityPlayerMP serverPlayer = (IEntityPlayerMP) ctx.getServerHandler().player;
 			SMPacketHandler.receivePacket(message, SMServerComm.instance, serverPlayer);
 			return null;
 		}
