@@ -242,8 +242,9 @@ config and refmap, the Mixin manifest entry, and no packaged `api/player/` or
 `net/smart/render/` classes. ForgeGradle is pinned to `3.0.197`, and the
 nonexistent `config.forge.version` resource input was removed.
 
-`.github/workflows/build-and-release.yml` builds on pushes to `master`, pull
+`.github/workflows/build-and-release.yml` builds on branch pushes, pull
 requests, and manual dispatch. A pushed `v{version}` tag publishes a GitHub
 Release only after the build succeeds and the tag matches `build.properties`.
-The workflow has not run on GitHub yet; a fresh runner build and release
-publication remain unverified. The `v1.0.0` tag has not been created.
+The first GitHub-hosted branch build passed on October 3
+([run 37130986432](https://github.com/DamianQualshy/SmarterMoving/actions/runs/37130986432)).
+Release publication remains unverified. The `v1.0.0` tag has not been created.
